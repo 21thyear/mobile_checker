@@ -19,11 +19,25 @@ Include in your code and begin using the library:
 CMD:checkdevice(playerid, params[])
 {
     extract params -> new target_id; else return true;
-    
-    new fmt_str[] = "Player device type: %s";
-    new string[sizeof(fmt_str) + 7];
-    format(string, sizeof(string), fmt_str, GetPlayerDevice(target_id));
+    new string[144];
+    GetPlayerDevice(target_id, string);
     
     return SendClientMessage(playerid, -1, string);
 }
 ```
+
+## Dependencies
+* PAWNRAKNET
+* a_samp
+
+## Used Interceptions
+ * Mobile_OnPlayerConnect
+ * Mobile_OnPlayerSpawn
+ * Mobile_OnPlayerDisconnect
+ * Mobile_OnGameModeInit
+ 
+## Stocks
+ * GetDeviceInfo(playerid, string[], len = sizeof string)
+ * GetClientID(playerid)
+ * ChangeMobileType(playerid, type)
+ * ChangePlayerHash(playerid, hash[])
