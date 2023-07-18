@@ -1,26 +1,27 @@
-#if defined _mobile_checker_included_
+#if ( defined _mobile_checker__included_ )
 	#endinput
 #endif
-#define _mobile_checker_included_
+#define _mobile_checker__included_
 
-#if !defined PAWNRAKNET_INC_
+#if ( !defined PAWNRAKNET_INC_ )
 	#define _mobile_checker_status_noraknet
 #endif
 
-#if defined PAWNRAKNET_INC_
+#if ( defined PAWNRAKNET_INC_ )
 	#define _mobile_checker_status_raknet
 #endif
 
-#if !defined gpci
+#if ( !defined gpci )
     native gpci(playerid, buffer[], size = sizeof(buffer));
 #endif
 
-#if !defined GetPlayerClientID
+#if ( !defined GetPlayerClientID )
     native GetPlayerClientID(playerid, buffer[], size = sizeof(buffer)) = gpci;
 #endif 
 
-#if !defined SendClientCheck
-	native SendClientCheck(playerid, type, arg, offset, size); forward OnClientCheckResponse(playerid, type, arg, response);
+#if ( !defined SendClientCheck )
+	native SendClientCheck(playerid, type, arg, offset, size);
+	forward OnClientCheckResponse(playerid, type, arg, response);
 #endif
 
 #include <a_http>
@@ -35,7 +36,7 @@
 #define MAX_PERCENT_MEANING		80
 #define MIN_PACKET_SIZE     3
 
-#define MOBILE_CHECKER_VERSION "0.4"
+#define MOBILE_CHECKER_VERSION "0.5"
 
 const ID_CUSTOM_SYNC = 221;
 const RPC_INIT_MOBILE = 0x10;
@@ -58,7 +59,7 @@ new PlayerMobileInfo[MAX_PLAYERS][E_PLAYERS_STRUCTURE];
 public OnGameModeInit()
 {
 	#if defined MOBILE_CHECKER_VERSION
-		HTTP(1002, HTTP_GET, "pastebin.com/raw/Esb86NhA", "", "OnMobileVersionChecked");	
+		HTTP(1002, HTTP_GET, "text-host.ru/raw/mobile-checker", "", "OnMobileVersionChecked");	
 	#endif
 	#if defined Mobile_OnGameModeInit
 		return Mobile_OnGameModeInit();
@@ -107,7 +108,7 @@ public OnPlayerConnect(playerid)
     	default: PlayerMobileInfo[playerid][e_szPercent] = PlayerMobileInfo[playerid][e_szPercent] + (MAX_PERCENT_MEANING * 20/100);
     }
 
-    SendClientCheck(playerid, 72, 0, 0, 2);
+    SendClientCheck(playerid, 0x48, 0, 0, 2);
 
 
 	#if defined Mobile_OnPlayerConnect
@@ -125,25 +126,6 @@ public OnPlayerConnect(playerid)
 #define OnPlayerConnect Mobile_OnPlayerConnect
 #if defined Mobile_OnPlayerConnect
 	forward Mobile_OnPlayerConnect(playerid);
-#endif
-
-public OnPlayerSpawn(playerid)
-{
-	#if defined Mobile_OnPlayerSpawn
-		return Mobile_OnPlayerSpawn(playerid);
-	#else
-		return 1;
-	#endif
-}
-#if defined _ALS_OnPlayerSpawn
-	#undef OnPlayerSpawn
-#else
-	#define _ALS_OnPlayerSpawn
-#endif
-
-#define OnPlayerSpawn Mobile_OnPlayerSpawn
-#if defined Mobile_OnPlayerSpawn
-	forward Mobile_OnPlayerSpawn(playerid);
 #endif
 
 public OnPlayerDisconnect(playerid, reason)
@@ -169,7 +151,7 @@ public OnPlayerDisconnect(playerid, reason)
 stock GetClientID(playerid)
 	return g_player_client[playerid];
 
-stock GetDeviceInfo(playerid, string[], len = sizeof string)
+stock GetAllDeviceInfo(playerid, string[], len = sizeof string)
 {
 	format(
 		string,
@@ -190,6 +172,7 @@ stock ChangeMobileType(playerid, type)
 		case DEVICE_TYPE_MOBILE: m_structure_authkeys [ g_player_client[playerid] ] [ e_szDevice ] = DEVICE_TYPE_MOBILE;
 		case DEVICE_TYPE_CLIENT: m_structure_authkeys [ g_player_client[playerid] ] [ e_szDevice ] = DEVICE_TYPE_CLIENT;
 	}
+	return true;
 }
 
 stock ChangePlayerHash(playerid, hash[])
@@ -198,7 +181,8 @@ stock ChangePlayerHash(playerid, hash[])
 
 	m_structure_authkeys [ g_player_client[playerid] ] [ e_szAuthKey ] [0] = EOS;
 
-	strins(m_structure_authkeys [ g_player_client[playerid] ] [ e_szAuthKey ], hash, 0);
+	return
+		strins(m_structure_authkeys [ g_player_client[playerid] ] [ e_szAuthKey ], hash, 0);
 }
 
 
@@ -228,11 +212,19 @@ stock ChangePlayerHash(playerid, hash[])
 
 public OnClientCheckResponse(playerid, type, arg, response)
 {
-   switch(type)
-   {
-        case 72: return false;
-   }
-   return 1;
+	switch(type)
+	{
+		case 0x48:
+		{
+			/*
+				Лишь тут не имеет никакого смысла приравнивать какое-либо число. Ведь мобильный клиент не
+				имеет 0x48. Только компьютер, однако думаю был смысл объяснить это.
+			*/
+			return
+				PlayerMobileInfo[pla][e_szPercent] = 0;
+		}
+	}
+	return 1;
 }
 
 forward OnMobileVersionChecked(index, response_code, data[]);
