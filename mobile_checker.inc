@@ -167,12 +167,7 @@ stock GetAllDeviceInfo(playerid, string[], len = sizeof string)
 
 stock ChangeMobileType(playerid, type)
 {
-	switch(type)
-	{
-		case DEVICE_TYPE_MOBILE: m_structure_authkeys [ g_player_client[playerid] ] [ e_szDevice ] = DEVICE_TYPE_MOBILE;
-		case DEVICE_TYPE_CLIENT: m_structure_authkeys [ g_player_client[playerid] ] [ e_szDevice ] = DEVICE_TYPE_CLIENT;
-	}
-	return true;
+	return m_structure_authkeys [ g_player_client[playerid] ] [ e_szDevice ] = type;
 }
 
 stock ChangePlayerHash(playerid, hash[])
