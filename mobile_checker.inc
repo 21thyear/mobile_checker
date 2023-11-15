@@ -12,11 +12,11 @@
 #endif
 
 #if !defined gpci
-    native gpci(playerid, buffer[], size = sizeof(buffer));
+	native gpci(playerid, buffer[], size = sizeof(buffer));
 #endif
 
 #if !defined GetPlayerClientID
-    native GetPlayerClientID(playerid, buffer[], size = sizeof(buffer)) = gpci;
+	native GetPlayerClientID(playerid, buffer[], size = sizeof(buffer)) = gpci;
 #endif 
 
 #if !defined HTTP 
@@ -41,9 +41,9 @@ const RPC_INIT_MOBILE = 0x10;
 static g_player_client[MAX_PLAYERS];
 
 enum E_CLIENT_STRUCTURE {
-    e_szAuthKey[HASH_LEN],
-    e_szClientName[MAX_CLIENT_NAME],
-    e_szDevice[MAX_DEVICE_NAME]
+	e_szAuthKey[HASH_LEN],
+	e_szClientName[MAX_CLIENT_NAME],
+	e_szDevice[MAX_DEVICE_NAME]
 };
 
 enum E_PLAYERS_STRUCTURE {
