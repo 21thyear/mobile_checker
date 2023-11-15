@@ -1,30 +1,27 @@
-#if ( defined _mobile_checker__included_ )
+#if defined _mobile_checker__included_
 	#endinput
 #endif
 #define _mobile_checker__included_
 
-#if ( !defined PAWNRAKNET_INC_ )
+#if !defined PAWNRAKNET_INC_
 	#define _mobile_checker_status_noraknet
 #endif
 
-#if ( defined PAWNRAKNET_INC_ )
+#if defined PAWNRAKNET_INC_
 	#define _mobile_checker_status_raknet
 #endif
 
-#if ( !defined gpci )
+#if !defined gpci
     native gpci(playerid, buffer[], size = sizeof(buffer));
 #endif
 
-#if ( !defined GetPlayerClientID )
+#if !defined GetPlayerClientID
     native GetPlayerClientID(playerid, buffer[], size = sizeof(buffer)) = gpci;
 #endif 
 
-#if ( !defined SendClientCheck )
-	native SendClientCheck(playerid, type, arg, offset, size);
-	forward OnClientCheckResponse(playerid, type, arg, response);
+#if !defined HTTP 
+	#include <a_http>
 #endif
-
-#include <a_http>
 
 #define DEVICE_TYPE_MOBILE      1
 #define DEVICE_TYPE_CLIENT      0
@@ -44,7 +41,6 @@ const RPC_INIT_MOBILE = 0x10;
 static g_player_client[MAX_PLAYERS];
 
 enum E_CLIENT_STRUCTURE {
-    e_szClientID,
     e_szAuthKey[HASH_LEN],
     e_szClientName[MAX_CLIENT_NAME],
     e_szDevice[MAX_DEVICE_NAME]
@@ -54,7 +50,7 @@ enum E_PLAYERS_STRUCTURE {
 	e_szPercent = 0,
 	bool: isHaveAutoaim = false
 };
-new PlayerMobileInfo[MAX_PLAYERS][E_PLAYERS_STRUCTURE];
+static g_mobile_data[MAX_PLAYERS][E_PLAYERS_STRUCTURE];
 
 public OnGameModeInit()
 {
@@ -64,7 +60,7 @@ public OnGameModeInit()
 	#if defined Mobile_OnGameModeInit
 		return Mobile_OnGameModeInit();
 	#else
-		return 1;
+		return true;
 	#endif
 }
 #if defined _ALS_OnGameModeInit
@@ -78,14 +74,15 @@ public OnGameModeInit()
 	forward Mobile_OnGameModeInit();
 #endif
 
-static const m_structure_authkeys[][E_CLIENT_STRUCTURE] = {
-	{0, "UNDEFINED", "Default", DEVICE_TYPE_CLIENT},
-    {1, "5638413348335738345A4536524D4A524539334B", "Hasn't name", DEVICE_TYPE_MOBILE},
-    {2,  "ED40ED0E8089CC44C08EE9580F4C8C44EE8EE990", "Jekmant", DEVICE_TYPE_MOBILE},
-    {3,  "FF2BE5E6F5D9392F57C4E66F7AD78767277C6E4F6B", "Hasn't name", DEVICE_TYPE_MOBILE},
-    {4,  "E02262CF28BC542486C558D4BE9EFB716592AFAF8B", "Codessar/FLIN BY SGMP", DEVICE_TYPE_MOBILE},
-    {5,  "10B3D2B1317ADD02CC1F680BC500A8BC0FD7AD42CE7", "grishin", DEVICE_TYPE_MOBILE},
-    {6,  "15121F6F18550C00AC4B4F8A167D0379BB0ACA99043", "Monser/Tushoonka", DEVICE_TYPE_MOBILE}
+static m_structure_authkeys[][E_CLIENT_STRUCTURE] = {
+	{"UNDEFINED", "Default", DEVICE_TYPE_CLIENT},
+
+    {"5638413348335738345A4536524D4A524539334B", "Old Jackmant", DEVICE_TYPE_MOBILE},
+    {"ED40ED0E8089CC44C08EE9580F4C8C44EE8EE990", "Jekmant", DEVICE_TYPE_MOBILE},
+    {"FF2BE5E6F5D9392F57C4E66F7AD78767277C6E4F6B", "Online RP", DEVICE_TYPE_MOBILE},
+    {"E02262CF28BC542486C558D4BE9EFB716592AFAF8B", "Codessar/FLIN BY SGMP", DEVICE_TYPE_MOBILE},
+    {"10B3D2B1317ADD02CC1F680BC500A8BC0FD7AD42CE7", "grishin", DEVICE_TYPE_MOBILE},
+    {"15121F6F18550C00AC4B4F8A167D0379BB0ACA99043", "Monser/Tushoonka", DEVICE_TYPE_MOBILE}
 };
 
 public OnPlayerConnect(playerid)
@@ -95,21 +92,18 @@ public OnPlayerConnect(playerid)
     static clientID[HASH_LEN];
     GetPlayerClientID(playerid, clientID, sizeof(clientID));
 
-    for(new i; i < sizeof( m_structure_authkeys ); i++) 
+    for(new i; i < sizeof(m_structure_authkeys); i++) 
 	{
-        if(strfind(clientID, m_structure_authkeys[i][e_szAuthKey], false, 0) != -1) {
+        if(!strcmp(clientID, m_structure_authkeys[i][e_szAuthKey]))
+		{
 			g_player_client[playerid] = i;
-			PlayerMobileInfo[playerid][e_szPercent] = PlayerMobileInfo[playerid][e_szPercent] + (MAX_PERCENT_MEANING * 20/100);
+			g_mobile_data[playerid][e_szPercent] = g_mobile_data[playerid][e_szPercent] + (MAX_PERCENT_MEANING * 20/100);
 		}
     }
-    switch(GetPlayerCameraAspectRatio(playerid))
+    if( (GetPlayerCameraAspectRatio(playerid) >= 1.2470589 ) || (GetPlayerCameraAspectRatio(playerid) <= 1.3333334 ))
     {
-    	case 1.3333334, 1.2470589: return false;
-    	default: PlayerMobileInfo[playerid][e_szPercent] = PlayerMobileInfo[playerid][e_szPercent] + (MAX_PERCENT_MEANING * 20/100);
+    	g_mobile_data[playerid][e_szPercent] = g_mobile_data[playerid][e_szPercent] + (MAX_PERCENT_MEANING * 20/100);
     }
-
-    SendClientCheck(playerid, 0x48, 0, 0, 2);
-
 
 	#if defined Mobile_OnPlayerConnect
 		return Mobile_OnPlayerConnect(playerid);
@@ -131,10 +125,11 @@ public OnPlayerConnect(playerid)
 public OnPlayerDisconnect(playerid, reason)
 {
 	g_player_client[playerid] = -1;
+
 	#if defined Mobile_OnPlayerDisconnect
 		return Mobile_OnPlayerDisconnect(playerid, reason);
 	#else
-		return 1;
+		return true;
 	#endif
 }
 #if defined _ALS_OnPlayerDisconnect
@@ -148,36 +143,40 @@ public OnPlayerDisconnect(playerid, reason)
 	forward Mobile_OnPlayerDisconnect(playerid, reason);
 #endif
 
-stock GetClientID(playerid)
+stock GetClientID(const playerid)
+{
+	if(!IsPlayerConnected(playerid)) return INVALID_PLAYER_ID;
+
 	return g_player_client[playerid];
+}
 
-stock GetAllDeviceInfo(playerid, string[], len = sizeof string)
+stock GetAllDeviceInfo(const playerid, string[], const len = sizeof string)
 {
-	format(
-		string,
-		len,
-		"ID: %i - Hash: %s - Device: %s - Chance: %i - Client: %s",
+	format(string, len, "ID: %i - Hash: %s - Device: %s - Chance: %i - Client: %s",
 		playerid,
-		m_structure_authkeys [ g_player_client[playerid] ] [ e_szAuthKey ],
-		m_structure_authkeys [ g_player_client[playerid] ] [ e_szDevice ]? ("Mobile") : ("Client"),
-		PlayerMobileInfo[ playerid ][ e_szPercent ],
-		m_structure_authkeys [ g_player_client[playerid] ] [ e_szClientName]
-		);
+		m_structure_authkeys [g_player_client[playerid]] [e_szAuthKey],
+		m_structure_authkeys [g_player_client[playerid]] [e_szDevice] ? ("Mobile") : ("Client"),
+		g_mobile_data[playerid][e_szPercent],
+		m_structure_authkeys [g_player_client[playerid]] [e_szClientName]
+	);
 }
 
-stock ChangeMobileType(playerid, type)
+stock ChangeMobileType(const playerid, const type)
 {
-	return m_structure_authkeys [ g_player_client[playerid] ] [ e_szDevice ] = type;
+	if(!IsPlayerConnected(playerid)) return INVALID_PLAYER_ID;
+
+    return m_structure_authkeys [g_player_client[playerid]] [e_szDevice] = type;
 }
 
-stock ChangePlayerHash(playerid, hash[])
+stock ChangePlayerHash(playerid, const hash[])
 {
+	if(!IsPlayerConnected(playerid)) return INVALID_PLAYER_ID;
 	if(strlen(hash) > HASH_LEN) return false;
 
-	m_structure_authkeys [ g_player_client[playerid] ] [ e_szAuthKey ] [0] = EOS;
+	m_structure_authkeys [g_player_client[playerid]] [e_szAuthKey] [0] = EOS;
 
 	return
-		strins(m_structure_authkeys [ g_player_client[playerid] ] [ e_szAuthKey ], hash, 0);
+		strins(m_structure_authkeys [g_player_client[playerid]] [e_szAuthKey], hash, 0);
 }
 
 
@@ -187,7 +186,7 @@ stock ChangePlayerHash(playerid, hash[])
 	{
 		new bytes, rpcid;
 		BS_GetNumberOfBytesUsed(bs, bytes);
-		if(bytes < MIN_PACKET_SIZE) return 0;
+		if(bytes < MIN_PACKET_SIZE) return false;
 
 		BS_ReadValue(bs, 
 			PR_IGNORE_BITS, 8,
@@ -198,39 +197,26 @@ stock ChangePlayerHash(playerid, hash[])
 			new autoaim;
 			BS_ReadValue(bs, PR_UINT8, autoaim);
 
-	        PlayerMobileInfo[playerid][e_szPercent] + (MAX_PERCENT_MEANING * 20/100);
-			PlayerMobileInfo[playerid][isHaveAutoaim] = bool:autoaim;
+	        g_mobile_data[playerid][e_szPercent] + 25;
+			g_mobile_data[playerid][isHaveAutoaim] = bool:autoaim;
 		}
-		return 1;
+		return true;
 	}
 #endif
-
-public OnClientCheckResponse(playerid, type, arg, response)
-{
-	switch(type)
-	{
-		case 0x48:
-		{
-			/*
-				Лишь тут не имеет никакого смысла приравнивать какое-либо число. Ведь мобильный клиент не
-				имеет 0x48. Только компьютер, однако думаю был смысл объяснить это.
-			*/
-			return
-				PlayerMobileInfo[pla][e_szPercent] = 0;
-		}
-	}
-	return 1;
-}
 
 forward OnMobileVersionChecked(index, response_code, data[]);
 public OnMobileVersionChecked(index, response_code, data[])
 {
-	#if defined MOBILE_CHECKER_VERSION
-		if(response_code == 200)
+	if(response_code == 200)
+	{
+		if(strcmp(data, MOBILE_CHECKER_VERSION))
 		{
-			if(strcmp(data, MOBILE_CHECKER_VERSION)) printf("A new version of 'Mobile Checker' is available: %s", data);
+			return printf("A new version of 'Mobile Checker' is available: %s", data);
 		}
-		else
-			printf("Failed to check 'Mobile Checker' update!");
-	#endif
+	}
+	else
+	{
+		printf("Failed check 'Mobile Checker' to update!");
+	}
+	return false;
 }
